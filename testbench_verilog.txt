@@ -1,0 +1,94 @@
+`timescale 1ns/1ps
+
+module tb_top_dedup_engine;
+
+    reg clk;
+    reg rst;
+    reg [7:0] pixel_in;
+    reg valid_in;
+
+    wire duplicate;
+
+    top_dedup_engine uut (
+        .clk(clk),
+        .rst(rst),
+        .pixel_in(pixel_in),
+        .valid_in(valid_in),
+        .duplicate(duplicate)
+    );
+
+    always #5 clk = ~clk;
+
+    integer i;
+
+    reg [7:0] image1 [0:63];
+    reg [7:0] image2 [0:63];
+    reg [7:0] image3 [0:63];
+
+    initial begin
+        clk = 0;
+        rst = 1;
+        valid_in = 0;
+
+        #20 rst = 0;
+
+        // BASE IMAGE
+        for (i = 0; i < 64; i = i + 1)
+            image1[i] = 100 + (i % 10);
+
+        // SIMILAR IMAGE (noise)
+        for (i = 0; i < 64; i = i + 1)
+            image2[i] = image1[i] + (i % 2);
+
+        // DIFFERENT IMAGE
+        for (i = 0; i < 64; i = i + 1)
+            image3[i] = 200 - (i % 10);
+
+        // -------------------
+        // IMAGE 1
+        // -------------------
+        $display("Image 1");
+        for (i = 0; i < 64; i = i + 1) begin
+            @(posedge clk);
+            pixel_in = image1[i];
+            valid_in = 1;
+        end
+        @(posedge clk);
+        valid_in = 0;
+
+        #100;
+
+        // -------------------
+        // IMAGE 2 (similar)
+        // -------------------
+        $display("Image 2 (similar)");
+        for (i = 0; i < 64; i = i + 1) begin
+            @(posedge clk);
+            pixel_in = image2[i];
+            valid_in = 1;
+        end
+        @(posedge clk);
+        valid_in = 0;
+
+        #100;
+        $display("Duplicate (should be 1) = %b", duplicate);
+
+        // -------------------
+        // IMAGE 3 (different)
+        // -------------------
+        $display("Image 3 (different)");
+        for (i = 0; i < 64; i = i + 1) begin
+            @(posedge clk);
+            pixel_in = image3[i];
+            valid_in = 1;
+        end
+        @(posedge clk);
+        valid_in = 0;
+
+        #100;
+        $display("Duplicate (should be 0) = %b", duplicate);
+
+        $stop;
+    end
+
+endmodule

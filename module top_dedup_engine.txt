@@ -1,0 +1,82 @@
+module top_dedup_engine(
+    input clk,
+    input rst,
+    input [7:0] pixel_in,
+    input valid_in,
+    output duplicate
+);
+
+    wire [7:0] pixel_out;
+    wire pixel_valid;
+
+    wire [63:0] signature;
+    wire sig_valid;
+
+    wire [63:0] stored_signature;
+
+    wire [6:0] distance;
+    wire compare_valid;
+
+    wire duplicate_wire;
+
+    // -------------------------
+    // MODULES
+    // -------------------------
+
+    preprocess_unit u1 (
+        .clk(clk),
+        .rst(rst),
+        .pixel_in(pixel_in),
+        .valid_in(valid_in),
+        .pixel_out(pixel_out),
+        .valid_out(pixel_valid)
+    );
+
+    feature_extractor u2 (
+        .clk(clk),
+        .rst(rst),
+        .pixel_in(pixel_out),
+        .valid_in(pixel_valid),
+        .signature(signature),
+        .valid_out(sig_valid)
+    );
+
+    signature_compare u3 (
+        .clk(clk),
+        .rst(rst),
+        .sig_new(signature),
+        .sig_old(stored_signature),
+        .valid_in(sig_valid),
+        .distance(distance),
+        .valid_out(compare_valid)
+    );
+
+    decision_unit u4 (
+        .clk(clk),
+        .rst(rst),
+        .distance(distance),
+        .valid_in(compare_valid),
+        .duplicate(duplicate_wire)
+    );
+
+    assign duplicate = duplicate_wire;
+
+    // -------------------------
+    // STORE FIRST SIGNATURE
+    // -------------------------
+    reg [63:0] stored_sig_reg;
+    reg first_done;
+
+    assign stored_signature = stored_sig_reg;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            stored_sig_reg <= 0;
+            first_done <= 0;
+        end else if (sig_valid && !first_done) begin
+            stored_sig_reg <= signature;
+            first_done <= 1;
+        end
+    end
+
+endmodule

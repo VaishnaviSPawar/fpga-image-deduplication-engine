@@ -1,0 +1,22 @@
+module decision_unit(
+    input clk,
+    input rst,
+    input [6:0] distance,
+    input valid_in,
+    output reg duplicate
+);
+
+    parameter THRESHOLD = 10;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            duplicate <= 0;
+        end else if (valid_in) begin
+            if (distance < THRESHOLD)
+                duplicate <= 1;
+            else
+                duplicate <= 0;
+        end
+    end
+
+endmodule

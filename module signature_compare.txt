@@ -1,0 +1,35 @@
+module signature_compare(
+    input clk,
+    input rst,
+    input [63:0] sig_new,
+    input [63:0] sig_old,
+    input valid_in,
+    output reg [6:0] distance,
+    output reg valid_out
+);
+
+    integer i;
+    reg [6:0] temp_dist;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            distance <= 0;
+            valid_out <= 0;
+        end else begin
+            valid_out <= 0;
+
+            if (valid_in) begin
+                temp_dist = 0;
+
+                for (i = 0; i < 64; i = i + 1) begin
+                    if (sig_new[i] != sig_old[i])
+                        temp_dist = temp_dist + 1;
+                end
+
+                distance <= temp_dist;
+                valid_out <= 1;
+            end
+        end
+    end
+
+endmodule
